@@ -52,31 +52,72 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 ################################
 
 		icmpHeader = recPacket[20:28]																							# get the ICMP header
-		timeToLive = struct.unpack("d", recPacket[0:8])[0]												# get the TTL
+		ICMPtype, ICMPcode, headerChecksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader) # change later
+		print "ICMP type is:", ICMPtype
+
+		if ICMPtype == 0:
+			
+			if (packetID==ID):
+				dataSize=struct.calcsize("d")
+				
+				timeSent=struct.unpack("d",recPacket[28:28 + dataSize])[0]					# get the bit containing the time sent
+				delay = timeReceived - timeSent
+				global shortestTime
+				global longestTime
+				global cumulativeTime
+				global numberOfPackets
+				if delay < shortestTime:
+					shortestTime = delay
+				if delay > longestTime:
+					longestTime = delay
+				cumulativeTime += delay
+				numberOfPackets += 1
+	
+	
+				print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(dataSize) + " " )
+
+		elif ICMPtype == 1:
+			print "ERROR: Unreachable!"
+			if ICMPcode == 0:
+				print "Code 0 - Network unreachable"
+			elif ICMPcode == 1:
+				print "Code 1 - Host unreachable"
+			elif ICMPcode == 2:
+				print "Code 2 - Protocol unreachable"
+			elif ICMPcode == 3:
+				print "Code 3 - Port unreachable"
+			elif ICMPcode == 4:
+				print "Code 4 - Fragmentation needed and DF set"
+			elif ICMPcode == 5:
+				print	"Code 5 - Source route failed"
+			elif ICMPcode == 6:
+				print	"Code 6 - Destination network unknown"
+			elif ICMPcode == 7:
+				print	"Code 7 - Destination host unknown"
+			else:
+				print "Unknown Code"
+
+		elif ICMPtype == 4:
+			print "Source Quench!"
+
+		elif ICMPtype == 11:
+			print "ERROR: TTL is 0!"
+			if ICMPcode == 0:
+				print "Code 0 - TTL is 0 during transit"
+			elif ICMPcode == 1:
+				print "Code 1 - TTL is 0 during reassembly"
+
+		elif ICMPtype == 12:
+			print "ERROR: Parameter problem!"
+			if ICMPcode == 0:
+				print "Code 0 - IP header bad"
+			elif ICMPcode == 1:
+				print "Code 1 - Required options missing"
+		else:
+			print "Unspecified ICMP type!"
 
 		
-
-		packetType, payload, headerChecksum, packetID, sequence=struct.unpack("bbHHh", icmpHeader)
-
-		if (packetID==ID):
-			dataSize=struct.calcsize("d")
-			
-			timeSent=struct.unpack("d",recPacket[28:28 + dataSize])[0]					# get the bit containing the time sent
-			delay = timeReceived - timeSent
-			global shortestTime
-			global longestTime
-			global cumulativeTime
-			global numberOfPackets
-			if delay < shortestTime:
-				shortestTime = delay
-			if delay > longestTime:
-				longestTime = delay
-			cumulativeTime += delay
-			numberOfPackets += 1
-
-
-			print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(dataSize) + " " )
-			return delay
+		return delay
 
 		#global packetsreceived
 		 
@@ -139,14 +180,17 @@ def ping(host, timeout=1):
 	#Send ping requests to a server separated by approximately one second
 	for i in range(numberOfPings):
 		delay = doOnePing(dest, timeout)
-		print "time =",delay, "ms\n"
+		if type(delay) == str:
+			print delay
+		else:			
+			print "time =",delay, "ms\n"
 		time.sleep(1) # one second
 	print "---------------ping statistics---------------"
 	print "number of packets received is " , numberOfPackets
 	packetLossPercentage = (1 - numberOfPackets/numberOfPings)*100
 	print "percentage packet loss = ", packetLossPercentage, "%"
 	if numberOfPackets > 0 :
-		print "round-trip min/avg/max = ", shortestTime, "/", cumulativeTime/numberOfPackets, "/", longestTime, " ms"
+		print "round-trip min/avg/max = ", shortestTime, "/", cumulativeTime/numberOfPackets, "/", longestTime, "ms"
 	return delay
 ping(sys.argv[1])
 
