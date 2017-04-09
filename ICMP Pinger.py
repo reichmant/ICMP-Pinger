@@ -7,6 +7,15 @@ import select
 import binascii
 import socket
 ICMP_ECHO_REQUEST = 8
+
+#global shortestTime, longestTime, cumulativeTime, numberOfPackets
+shortestTime = 99999999999
+longestTime = -99999999999
+cumulativeTime = 0
+numberOfPackets = 0
+
+
+
 def checksum(str):
 	csum = 0
 	countTo = (len(str) / 2) * 2
@@ -43,21 +52,35 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 ################################
 
 		icmpHeader = recPacket[20:28]																							# get the ICMP header
-    timeToLive = struct.unpack("d", recPacket[0:8])[0]												# get the TTL
+		timeToLive = struct.unpack("d", recPacket[0:8])[0]												# get the TTL
 
-    someList = [packetType, payload, headerChecksum, packetID, sequence]
+		
 
-		someList = struct.unpack("bbHHh", icmpHeader)		# make a list containing the unpacked packet
+		packetType, payload, headerChecksum, packetID, sequence=struct.unpack("bbHHh", icmpHeader)
 
-    if (packetID==ID):
+		if (packetID==ID):
 			dataSize=struct.calcsize("d")
+			
 			timeSent=struct.unpack("d",recPacket[28:28 + dataSize])[0]					# get the bit containing the time sent
-			print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(bytesInDouble) + " " )
-			return timeReceived - timeSent		
+			delay = timeReceived - timeSent
+			global shortestTime
+			global longestTime
+			global cumulativeTime
+			global numberOfPackets
+			if delay < shortestTime:
+				shortestTime = delay
+			if delay > longestTime:
+				longestTime = delay
+			cumulativeTime += delay
+			numberOfPackets += 1
+
+
+			print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(dataSize) + " " )
+			return delay
 
 		#global packetsreceived
-     
-     #packetsreceived=packetsreceived+1
+		 
+		#packetsreceived=packetsreceived+1
 ################################
 		timeLeft = timeLeft - howLongInSelect
 		if timeLeft <= 0:
@@ -103,14 +126,27 @@ def doOnePing(destAddr, timeout):
 def ping(host, timeout=1):
 	#timeout=1 means: If one second goes by without a reply from the server,
 	#the client assumes that either the client's ping or the server's pong is lost
+
+	
+	if sys.argv[2] > 0:
+		numberOfPings = int(sys.argv[2])
+	else:
+		numberOfPings = 10
 	dest = socket.gethostbyname(host)
 	print "Pinging " + dest + " using Python:"
 	print ""
+	
 	#Send ping requests to a server separated by approximately one second
-	while 1 :
+	for i in range(numberOfPings):
 		delay = doOnePing(dest, timeout)
-		print delay
+		print "time =",delay, "ms\n"
 		time.sleep(1) # one second
+	print "---------------ping statistics---------------"
+	print "number of packets received is " , numberOfPackets
+	packetLossPercentage = (1 - numberOfPackets/numberOfPings)*100
+	print "percentage packet loss = ", packetLossPercentage, "%"
+	if numberOfPackets > 0 :
+		print "round-trip min/avg/max = ", shortestTime, "/", cumulativeTime/numberOfPackets, "/", longestTime, " ms"
 	return delay
-ping("www.xavier.edu")
+ping(sys.argv[1])
 
