@@ -6,6 +6,7 @@ import time
 import select
 import binascii
 import socket
+import antigravity
 ICMP_ECHO_REQUEST = 8
 
 #global shortestTime, longestTime, cumulativeTime, numberOfPackets
@@ -36,6 +37,9 @@ def checksum(str):
 	answer = answer & 0xffff
 	answer = answer >> 8 | (answer << 8 & 0xff00)
 	return answer
+
+
+	
 def receiveOnePing(mySocket, ID, timeout, destAddr):
 	timeLeft = timeout
  
