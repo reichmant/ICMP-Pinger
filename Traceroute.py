@@ -49,27 +49,31 @@ def build_packet():
 # So the function ending should look like this
 # Make the header in a similar way to the ping exercise.
 ####################################################
+
+    #Rewrite comments
+
+
     # Header is type (8), code (8), checksum (16), id (16), sequence (16)
-    myChecksum = 0
-    myID = os.getpid() & 0xFFFF
+    theChecksum = 0
+    ID = os.getpid() & 0xFFFF
 
     # Make a dummy header with a 0 checksum.
     # struct -- Interpret strings as packed binary data
-    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, myID, 1)
-    #header = struct.pack("!HHHHH", ICMP_ECHO_REQUEST, 0, myChecksum, pid, 1)
-    data = struct.pack("d", time.time())
+    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
+    #header = struct.pack("!HHHHH", ICMP_ECHO_REQUEST, 0, theChecksum, pid, 1)
+    payload = struct.pack("d", time.time())
 
     # Calculate the checksum on the data and the dummy header.
     # Append checksum to the header.
-    myChecksum = checksum(header + data)    
+    theChecksum = checksum(ICMPHeader + payload)    
     if sys.platform == 'darwin':
-        myChecksum = socket.htons(myChecksum) & 0xffff
+        theChecksum = socket.htons(theChecksum) & 0xffff
         #Convert 16-bit integers from host to network byte order.
     else:
-        myChecksum = htons(myChecksum)
+        theChecksum = htons(theChecksum)
 
-    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, myID, 1)
-    packet = header + data
+    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
+    packet = ICMPHeader + payload
     return packet
 #####################################################
 def get_route(hostname):
