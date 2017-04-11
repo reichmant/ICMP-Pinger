@@ -5,6 +5,8 @@ import struct
 import time
 import select
 import binascii
+import socket
+
 ICMP_ECHO_REQUEST = 8
 MAX_HOPS = 30
 TIMEOUT = 2.0
@@ -60,7 +62,7 @@ def build_packet():
     # Make a dummy header with a 0 checksum.
     # struct -- Interpret strings as packed binary data
     ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
-    #header = struct.pack("!HHHHH", ICMP_ECHO_REQUEST, 0, theChecksum, pid, 1)
+    
     payload = struct.pack("d", time.time())
 
     # Calculate the checksum on the data and the dummy header.
