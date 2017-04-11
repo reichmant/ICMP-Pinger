@@ -68,7 +68,7 @@ def build_packet():
     # Calculate the checksum on the data and the dummy header.
     # Append checksum to the header.
     theChecksum = checksum(ICMPHeader + payload)    
-    if sys.platform == 'darwin':
+    if sys.platform == 'sierra':
         theChecksum = socket.htons(theChecksum) & 0xffff
         #Convert 16-bit integers from host to network byte order.
     else:
