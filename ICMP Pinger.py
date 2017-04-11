@@ -6,7 +6,7 @@ import time
 import select
 import binascii
 import socket
-import antigravity
+#import antigravity
 ICMP_ECHO_REQUEST = 8
 
 #global shortestTime, longestTime, cumulativeTime, numberOfPackets
@@ -39,70 +39,72 @@ def checksum(str):
 	return answer
 
 
-def analyzeType(ICMPtype):
-    	print "ICMP type is:", ICMPtype
-		if ICMPtype == 0:
-    			
-			dataSize=struct.calcsize("d")
+def analyzeType(ICMPtype,ICMPcode,recPacket,destAddr):
+	print "ICMP type and code are:", ICMPtype, ", ",ICMPcode
+	timeReceived = time.time()
+	
+	if ICMPtype == 0:
 			
-			timeSent=struct.unpack("d",recPacket[28:28 + dataSize])[0]					# get the bit containing the time sent
-			delay = timeReceived - timeSent
-			global shortestTime
-			global longestTime
-			global cumulativeTime
-			global numberOfPackets
-			if delay < shortestTime:
-				shortestTime = delay
-			if delay > longestTime:
-				longestTime = delay
-			cumulativeTime += delay
-			numberOfPackets += 1
-			
+		dataSize=struct.calcsize("d")
+		
+		timeSent=struct.unpack("d",recPacket[28:28 + dataSize])[0]		# get the bit containing the time sent
+		delay = timeReceived - timeSent
+		global shortestTime
+		global longestTime
+		global cumulativeTime
+		global numberOfPackets
+		if delay < shortestTime:
+			shortestTime = delay
+		if delay > longestTime:
+			longestTime = delay
+		cumulativeTime += delay
+		numberOfPackets += 1
+		
 
-			print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(dataSize) + " " )
+		print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(dataSize) + " " )
 
-			return delay
+		return delay
 
 
-		elif ICMPtype == 1:
-			print "ERROR: Unreachable!"
-			if ICMPcode == 0:
-				print "Code 0 - Network unreachable"
-			elif ICMPcode == 1:
-				print "Code 1 - Host unreachable"
-			elif ICMPcode == 2:
-				print "Code 2 - Protocol unreachable"
-			elif ICMPcode == 3:
-				print "Code 3 - Port unreachable"
-			elif ICMPcode == 4:
-				print "Code 4 - Fragmentation needed and DF set"
-			elif ICMPcode == 5:
-				print	"Code 5 - Source route failed"
-			elif ICMPcode == 6:
-				print	"Code 6 - Destination network unknown"
-			elif ICMPcode == 7:
-				print	"Code 7 - Destination host unknown"
-			else:
-				print "Unknown Code"
-
-		elif ICMPtype == 4:
-			print "Source Quench!"
-
-		elif ICMPtype == 11:
-			print "ERROR: TTL is 0!"
-			if ICMPcode == 0:
-				print "Code 0 - TTL is 0 during transit"
-			elif ICMPcode == 1:
-				print "Code 1 - TTL is 0 during reassembly"
-
-		elif ICMPtype == 12:
-			print "ERROR: Parameter problem!"
-			if ICMPcode == 0:
-				print "Code 0 - IP header bad"
-			elif ICMPcode == 1:
-				print "Code 1 - Required options missing"
+	elif ICMPtype == 1:
+		print "ERROR: Unreachable!"
+		if ICMPcode == 0:
+			print "Code 0 - Network unreachable"
+		elif ICMPcode == 1:
+			print "Code 1 - Host unreachable"
+		elif ICMPcode == 2:
+			print "Code 2 - Protocol unreachable"
+		elif ICMPcode == 3:
+			print "Code 3 - Port unreachable"
+		elif ICMPcode == 4:
+			print "Code 4 - Fragmentation needed and DF set"
+		elif ICMPcode == 5:
+			print	"Code 5 - Source route failed"
+		elif ICMPcode == 6:
+			print	"Code 6 - Destination network unknown"
+		elif ICMPcode == 7:
+			print	"Code 7 - Destination host unknown"
 		else:
-			print "Unknown!"
+			print "Unknown Code"
+
+	elif ICMPtype == 4:
+		print "Source Quench!"
+
+	elif ICMPtype == 11:
+		print "ERROR: TTL is 0!"
+		if ICMPcode == 0:
+			print "Code 0 - TTL is 0 during transit"
+		elif ICMPcode == 1:
+			print "Code 1 - TTL is 0 during reassembly"
+
+	elif ICMPtype == 12:
+		print "ERROR: Parameter problem!"
+		if ICMPcode == 0:
+			print "Code 0 - IP header bad"
+		elif ICMPcode == 1:
+			print "Code 1 - Required options missing"
+	else:
+		print "Unknown!"
 
 def receiveOnePing(mySocket, ID, timeout, destAddr):
 	timeLeft = timeout
@@ -115,7 +117,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 		if whatReady[0] == []: # Timeout
 			return "Request timed out."
 
-		timeReceived = time.time()
+		
 		recPacket, addr = mySocket.recvfrom(1024)
 		
 
@@ -124,7 +126,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 		
 
 		if (packetID==ID):
-			delay=analyzeType(ICMPtype)
+			delay=analyzeType(ICMPtype,recPacket,destAddr)
 			return delay
 
 		timeLeft = timeLeft - howLongInSelect
