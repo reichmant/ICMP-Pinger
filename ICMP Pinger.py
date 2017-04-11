@@ -51,8 +51,8 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 		
 ################################
 
-		icmpHeader = recPacket[20:28]																							# get the ICMP header
-		ICMPtype, ICMPcode, headerChecksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader) # change later
+		icmpHeader = recPacket[20:36]																							# get the ICMP header
+		ICMPtype, ICMPcode, headerChecksum, packetID, sequence, timeToLive = struct.unpack("bbHHhd", icmpHeader) # change later
 		print "ICMP type is:", ICMPtype
 
 		if ICMPtype == 0:
@@ -118,10 +118,6 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 
 		
 		return delay
-
-		#global packetsreceived
-		 
-		#packetsreceived=packetsreceived+1
 ################################
 		timeLeft = timeLeft - howLongInSelect
 		if timeLeft <= 0:
