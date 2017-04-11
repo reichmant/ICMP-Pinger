@@ -42,42 +42,36 @@ def checksum(str):
 
 
 def build_packet():
-# In the sendOnePing() method of the ICMP Ping exercise ,firstly the header of our
-# packet to be sent was made, secondly the checksum was appended to the header and
-# then finally the complete packet was sent to the destination.
-# Make the header in a similar way to the ping exercise.
-# Append checksum to the header.
-# Don’t send the packet yet , just return the final packet in this function.
-# So the function ending should look like this
-# Make the header in a similar way to the ping exercise.
-####################################################
-
-    #Rewrite comments
 
 
-    # Header is type (8), code (8), checksum (16), id (16), sequence (16)
+
+
+    #Creates new checksum for packet
     theChecksum = 0
+    #Gets ID of packet
     ID = os.getpid() & 0xFFFF
 
-    # Make a dummy header with a 0 checksum.
-    # struct -- Interpret strings as packed binary data
+    
+    #creates header with checksum of 0
     ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
     
+
+    #make the body of the ICMP the current time
     payload = struct.pack("d", time.time())
 
-    # Calculate the checksum on the data and the dummy header.
-    # Append checksum to the header.
+    # Creates proper checksum for packet
     theChecksum = checksum(ICMPHeader + payload)    
-    if sys.platform == 'sierra':
-        theChecksum = socket.htons(theChecksum) & 0xffff
-        #Convert 16-bit integers from host to network byte order.
-    else:
-        theChecksum = htons(theChecksum)
 
+    #Fully constructs the new header with the new checksum
     ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
+
+    #Combine header with body
     packet = ICMPHeader + payload
+
     return packet
 #####################################################
+
+
 def get_route(hostname):
     timeLeft = TIMEOUT
     for ttl in xrange(1,MAX_HOPS):
@@ -85,9 +79,12 @@ def get_route(hostname):
             destAddr = gethostbyname(hostname)
             
             #Fill in start
-            # Make a raw socket named mySocket
+
+            # Get protocol type corresponding to ICMP
             protocol = socket.getprotobyname("icmp")
+            #Create a socket for that protocol
             mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)
+
             #Fill in end
 
             mySocket.setsockopt(IPPROTO_IP, IP_TTL, struct.pack('I',    ttl))
@@ -111,9 +108,11 @@ def get_route(hostname):
                 continue
             else:
                 #Fill in start
+
                 # Fetch the icmp type from the IP packet
                 icmpHeader = recvPacket[20:28]
                 ICMPType, ICMPcode, HeaderChecksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
+                
                 #Fill in end
                 if type == 11:
                     bytes = struct.calcsize("d")

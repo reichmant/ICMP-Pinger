@@ -39,48 +39,29 @@ def checksum(str):
 	return answer
 
 
-	
-def receiveOnePing(mySocket, ID, timeout, destAddr):
-	timeLeft = timeout
- 
-	while True:
-		startedSelect = time.time()																				
-		whatReady = select.select([mySocket], [], [], timeLeft)
-		howLongInSelect = (time.time() - startedSelect)
-		if whatReady[0] == []: # Timeout
-			return "Request timed out."
-
-		timeReceived = time.time()
-		recPacket, addr = mySocket.recvfrom(1024)
-		
-################################
-
-		icmpHeader = recPacket[20:28]																							# get the ICMP header
-		ICMPtype, ICMPcode, headerChecksum, packetID, sequence= struct.unpack("bbHHh", icmpHeader) # change later
-		print "ICMP type is:", ICMPtype
-
-		if ICMPtype == 0:
+def analyzeType(ICMPtype):
+	if ICMPtype == 0:
+    		
+			dataSize=struct.calcsize("d")
 			
-			if (packetID==ID):
-				dataSize=struct.calcsize("d")
-				
-				timeSent=struct.unpack("d",recPacket[28:28 + dataSize])[0]					# get the bit containing the time sent
-				delay = timeReceived - timeSent
-				global shortestTime
-				global longestTime
-				global cumulativeTime
-				global numberOfPackets
-				if delay < shortestTime:
-					shortestTime = delay
-				if delay > longestTime:
-					longestTime = delay
-				cumulativeTime += delay
-				numberOfPackets += 1
-	
-	
-				print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(dataSize) + " " )
+			timeSent=struct.unpack("d",recPacket[28:28 + dataSize])[0]		# get the bit containing the time sent
+			delay = timeReceived - timeSent
+			global shortestTime
+			global longestTime
+			global cumulativeTime
+			global numberOfPackets
+			if delay < shortestTime:
+				shortestTime = delay
+			if delay > longestTime:
+				longestTime = delay
+			cumulativeTime += delay
+			numberOfPackets += 1
 
-		elif ICMPtype == 1:
+
+			print ("Reply from " + str(destAddr) + ":" + " bytes=" + str(dataSize) + " " )
+
+	elif ICMPtype == 1:
+    		
 			print "ERROR: Unreachable!"
 			if ICMPcode == 0:
 				print "Code 0 - Network unreachable"
@@ -101,24 +82,46 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 			else:
 				print "Unknown Code"
 
-		elif ICMPtype == 4:
+	elif ICMPtype == 4:
 			print "Source Quench!"
 
-		elif ICMPtype == 11:
+	elif ICMPtype == 11:
 			print "ERROR: TTL is 0!"
 			if ICMPcode == 0:
 				print "Code 0 - TTL is 0 during transit"
 			elif ICMPcode == 1:
 				print "Code 1 - TTL is 0 during reassembly"
 
-		elif ICMPtype == 12:
+	elif ICMPtype == 12:
 			print "ERROR: Parameter problem!"
 			if ICMPcode == 0:
 				print "Code 0 - IP header bad"
 			elif ICMPcode == 1:
 				print "Code 1 - Required options missing"
-		else:
-			print "Unspecified ICMP type!"
+	else:
+			
+
+def receiveOnePing(mySocket, ID, timeout, destAddr):
+	timeLeft = timeout
+ 
+	while True:
+		startedSelect = time.time()																				
+		whatReady = select.select([mySocket], [], [], timeLeft)
+		howLongInSelect = (time.time() - startedSelect)
+		if whatReady[0] == []: # Timeout
+			return "Request timed out."
+
+		timeReceived = time.time()
+		recPacket, addr = mySocket.recvfrom(1024)
+		
+################################
+
+		icmpHeader = recPacket[20:28]																							# get the ICMP header
+		ICMPtype, ICMPcode, headerChecksum, packetID, sequence= struct.unpack("bbHHh", icmpHeader) # change later
+		print "ICMP type is:", ICMPtype
+
+		if (packetID==ID):
+			analyzeType(ICMPtype)
 
 		
 		return delay
