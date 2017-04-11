@@ -43,9 +43,6 @@ def checksum(str):
 
 def build_packet():
 
-
-
-
     #Creates new checksum for packet
     theChecksum = 0
     #Gets ID of packet
@@ -61,6 +58,8 @@ def build_packet():
 
     # Creates proper checksum for packet
     theChecksum = checksum(ICMPHeader + payload)    
+
+    theChecksum = htons(theChecksum)
 
     #Fully constructs the new header with the new checksum
     ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
@@ -80,9 +79,9 @@ def get_route(hostname):
             
             #Fill in start
 
-            # Get protocol type corresponding to ICMP
-            protocol = socket.getprotobyname("icmp")
-            #Create a socket for that protocol
+            # Make a raw socket named mySocket
+            protocol = socket.getprotobyname("icmp")     # the same as when we did this in the other file
+
             mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)
 
             #Fill in end
@@ -93,7 +92,7 @@ def get_route(hostname):
             try:
                 d = build_packet()
                 mySocket.sendto(d, (hostname, 0))
-                t= time.time()
+                t = time.time()
                 startedSelect = time.time()
                 whatReady = select.select([mySocket], [], [], timeLeft)
                 howLongInSelect = (time.time() - startedSelect)
@@ -107,28 +106,29 @@ def get_route(hostname):
             except timeout:
                 continue
             else:
-                #Fill in start
 
                 # Fetch the icmp type from the IP packet
                 icmpHeader = recvPacket[20:28]
-                ICMPType, ICMPcode, HeaderChecksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
                 
-                #Fill in end
-                if type == 11:
+                ICMPType, ICMPcode, headerChecksum, packetID, sequence= struct.unpack("bbHHh", icmpHeader) # we don't need anything besides ICMPType ("b")
+
+                #ICMPType = struct.unpack("d", icmpHeader)                                  # why doesn't this work!?
+
+                if ICMPType == 11:
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
                     print " %d rtt=%.0f ms %s" %(ttl, (timeReceived -t)*1000, addr[0])
-                elif type == 3:
+                elif ICMPType == 3:
                     bytes = struct.calcsize("d") 
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
                     print " %d rtt=%.0f ms %s" %(ttl, (timeReceived-t)*1000, addr[0])
-                elif type == 0:
+                elif ICMPType == 0:
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
                     print " %d rtt=%.0f ms %s" %(ttl, (timeReceived - timeSent)*1000, addr[0])
                     return
                 else:
-                    print "error"
+                    print "Error - no ICMP types"
                 break
             finally:
                 mySocket.close()
