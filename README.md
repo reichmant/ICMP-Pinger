@@ -1,5 +1,5 @@
 # NetworkingProject2
-
+### Thomas Reichman, Patrick Gemperline, Aaron Pitman
 ## Prerequisites
 
 None. Having 'sl' and 'cowsay' installed is highly reccommended. Patrick insists it's required.
