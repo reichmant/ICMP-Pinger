@@ -153,6 +153,7 @@ def sendOnePing(mySocket, destAddr, ID):
 	data = struct.pack("d", time.time())											# Pack the data
 	# Calculate the checksum on the data and the dummy header.
 	myChecksum = checksum(header + data)
+	myChecksum = socket.htons(myChecksum)
 
 	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
 	packet = header + data
@@ -183,7 +184,7 @@ def ping(host, timeout=1):
 
 	except:
 		numberOfPings = 10
-		print "You didn't enter a number of pings, defaulting to 10."
+		print "You didn't enter a valid number of pings, defaulting to 10."
 	
 	dest = socket.gethostbyname(host)
 	print "Pinging " + dest + " using Python:"
