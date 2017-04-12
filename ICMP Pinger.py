@@ -161,7 +161,7 @@ def sendOnePing(mySocket, destAddr, ID):
 	#Both LISTS and TUPLES consist of a number of objects
 	#which can be referenced by their position number within the object
 def doOnePing(destAddr, timeout):
-	icmp = socket.getprotobyname("icmp")											# Get the protocol code for ICMP
+	icmp = socket.getprotobyname("icmp")							# Get the protocol code for ICMP
 	#SOCK_RAW is a powerful socket type. For more details see:
 	#http://sock-raw.org/papers/sock_raw
 	#Create Socket here
