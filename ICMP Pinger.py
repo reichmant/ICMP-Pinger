@@ -6,7 +6,7 @@ import time
 import select
 import binascii
 import socket
-#import antigravity
+#import antigravity																	# https://xkcd.com/353/
 ICMP_ECHO_REQUEST = 8
 
 #global shortestTime, longestTime, cumulativeTime, numberOfPackets
@@ -18,18 +18,20 @@ numberOfPackets = 0
 
 
 def checksum(str):
-	csum = 0
-	countTo = (len(str) / 2) * 2
+	# Calculate the checksum.
+	csum = 0																		# Initialize to 0
+	countTo = (len(str) / 2) * 2													# Calculate upper bound
+	count = 0																		# Initialize counter at 0
 
-	count = 0
-	while count < countTo:
-		thisVal = ord(str[count+1]) * 256 + ord(str[count])
+	while count < countTo:															# While within the bounds of the counter...
+		thisVal = ord(str[count+1]) * 256 + ord(str[count])							#	Calculate the checksum
 		csum = csum + thisVal
 		csum = csum & 0xffffffffL
 		count = count + 2
-	if countTo < len(str):
-		csum = csum + ord(str[len(str) - 1])
-		csum = csum & 0xffffffffL
+
+	if countTo < len(str):															# Also do some fancy checksum stuff if the upper
+		csum = csum + ord(str[len(str) - 1])										# bounds of the counter are less than the length
+		csum = csum & 0xffffffffL													# of the string passed in.
 
 	csum = (csum >> 16) + (csum & 0xffff)
 	csum = csum + (csum >> 16)
@@ -40,6 +42,10 @@ def checksum(str):
 
 
 def analyzeType(ICMPtype,ICMPcode,recPacket,destAddr):
+	# Takes a type and code in for the received packet/destination address
+	# Prints out what type of response we got, based on type/code
+	# It looks complicated, but it's just a series of IF statements, based on:
+	# https://rlworkman.net/howtos/iptables/chunkyhtml/x281.html
 	print "ICMP type and code are:", ICMPtype, ", ",ICMPcode
 	timeReceived = time.time()
 	
@@ -107,11 +113,13 @@ def analyzeType(ICMPtype,ICMPcode,recPacket,destAddr):
 		print "Unknown!"
 
 def receiveOnePing(mySocket, ID, timeout, destAddr):
+	# Gets the returned packet.
+	# Extracts information (header, etc.).
+	# Calculates delay.
 	timeLeft = timeout
 
- 
 	while True:
-		startedSelect = time.time()																				
+		startedSelect = time.time()													# Mark the current time as when we started select
 		whatReady = select.select([mySocket], [], [], timeLeft)
 		howLongInSelect = (time.time() - startedSelect)
 		if whatReady[0] == []: # Timeout
@@ -121,12 +129,13 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 		recPacket, addr = mySocket.recvfrom(1024)
 		
 
-		icmpHeader = recPacket[20:28]																							# get the ICMP header
-		ICMPtype, ICMPcode, headerChecksum, packetID, sequence= struct.unpack("bbHHh", icmpHeader) # change later
-		
+		icmpHeader = recPacket[20:28]												# Get the ICMP header, those 8 bytes
+											# (I heard we can go further and get TTL, but we accomplished that differently)
+		ICMPtype, ICMPcode, headerChecksum, packetID, sequence= struct.unpack("bbHHh", icmpHeader)	# To get TTL, we could use "bbHHhd".
+																									# But we don't need that? I heard other groups needed that...
 
-		if (packetID==ID):
-			delay=analyzeType(ICMPtype, ICMPcode, recPacket,destAddr)
+		if (packetID==ID):															# If the packet ID matches the one passed in...
+			delay=analyzeType(ICMPtype, ICMPcode, recPacket, destAddr)				# Get the delay by analyzing the type/code
 			return delay
 
 		timeLeft = timeLeft - howLongInSelect
@@ -140,8 +149,8 @@ def sendOnePing(mySocket, destAddr, ID):
 	myChecksum = 0
 	# Make a dummy header with a 0 checksum.
 	# struct -- Interpret strings as packed binary data
-	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
-	data = struct.pack("d", time.time())
+	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)			# Pack the header
+	data = struct.pack("d", time.time())											# Pack the data
 	# Calculate the checksum on the data and the dummy header.
 	myChecksum = checksum(header + data)
 
@@ -152,28 +161,29 @@ def sendOnePing(mySocket, destAddr, ID):
 	#Both LISTS and TUPLES consist of a number of objects
 	#which can be referenced by their position number within the object
 def doOnePing(destAddr, timeout):
-	icmp = socket.getprotobyname("icmp")							# Get the protocol code for ICMP
+	icmp = socket.getprotobyname("icmp")											# Get the protocol code for ICMP
 	#SOCK_RAW is a powerful socket type. For more details see:
 	#http://sock-raw.org/papers/sock_raw
 	#Create Socket here
-	mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp) # create a socket as defined here: https://docs.python.org/2/library/socket.html#socket.socket
-	mySocket.bind(("",0))											# binds it to the address we give it
+	mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp) # Create a socket as defined here: https://docs.python.org/2/library/socket.html#socket.socket
+	mySocket.bind(("",0))											# Binds it to the address we give it. Needs to be a tuple.
 
-	myID = os.getpid() & 0xFFFF #Return the current process i
-	sendOnePing(mySocket, destAddr, myID)
-	delay = receiveOnePing(mySocket, myID, timeout, destAddr)
+	myID = os.getpid() & 0xFFFF 									# Return the current process id
+	sendOnePing(mySocket, destAddr, myID)							# Send a ping, based on above stuff (passed in)
+	delay = receiveOnePing(mySocket, myID, timeout, destAddr)		# Calculate the current delay
 
-	mySocket.close()
-	return delay
+	mySocket.close()												# Close the socket, we're done with everything we need to do with it (for now)
+	return delay													# Return the delay
 def ping(host, timeout=1):
-	#timeout=1 means: If one second goes by without a reply from the server,
+	# timeout=1 means: If one second goes by without a reply from the server,
 	#the client assumes that either the client's ping or the server's pong is lost
 
 	try:
-		numberOfPings=int(sys.argv[2])
+		numberOfPings = int(sys.argv[2])							# If we can, use the user's input as the number of pings to send
 
 	except:
-		numberOfPings=10
+		numberOfPings = 10
+		print "You didn't enter a number of pings, defaulting to 10."
 	
 	dest = socket.gethostbyname(host)
 	print "Pinging " + dest + " using Python:"
@@ -187,7 +197,10 @@ def ping(host, timeout=1):
 		else:			
 			print "time =",delay, "ms\n"
 		time.sleep(1) # one second
-	print "---------------ping statistics---------------"
+
+
+	# Print all the results, including a fancy little header
+	print "---------------ping statistics---------------"				
 	print "number of packets received is " , numberOfPackets
 	packetLossPercentage = (1 - numberOfPackets/numberOfPings)*100
 	print "percentage packet loss = ", packetLossPercentage, "%"
