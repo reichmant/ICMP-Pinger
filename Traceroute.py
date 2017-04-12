@@ -68,7 +68,6 @@ def build_packet():
     packet = ICMPHeader + payload
 
     return packet
-#####################################################
 
 
 def get_route(hostname):
@@ -132,4 +131,4 @@ def get_route(hostname):
                 break
             finally:
                 mySocket.close()
-get_route("google.com")
+get_route(sys.argv[1])
