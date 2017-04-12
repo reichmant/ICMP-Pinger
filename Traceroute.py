@@ -17,106 +17,102 @@ TRIES = 2
 def checksum(str):
 # In this function we make the checksum of our packet
 # hint: see icmpPing lab
+# We just copied this from the other file, since we already did it...
+    csum = 0                                                            # Initialize to 0
+    countTo = (len(str) / 2) * 2                                        # Calculate upper bound
+    count = 0                                                           # Initialize counter at 0
 
-    csum = 0
-    countTo = (len(str) / 2) * 2
-    count = 0
-
-    while count < countTo:
-        thisVal = ord(str[count+1]) * 256 + ord(str[count])
+    while count < countTo:                                              # While within the bounds of the counter...
+        thisVal = ord(str[count+1]) * 256 + ord(str[count])             #   Calculate the checksum
         csum = csum + thisVal
         csum = csum & 0xffffffffL
         count = count + 2
 
-    if countTo < len(str):
-        csum = csum + ord(str[len(str) - 1])
-        csum = csum & 0xffffffffL
+    if countTo < len(str):                                              # Also do some fancy checksum stuff if the upper
+        csum = csum + ord(str[len(str) - 1])                            # bounds of the counter are less than the length
+        csum = csum & 0xffffffffL                                       # of the string passed in.
 
     csum = (csum >> 16) + (csum & 0xffff)
     csum = csum + (csum >> 16)
     answer = ~csum
     answer = answer & 0xffff
     answer = answer >> 8 | (answer << 8 & 0xff00)
-    return answer
-
+    return answer                                                       
 
 
 def build_packet():
-# In the sendOnePing() method of the ICMP Ping exercise ,firstly the header of our
-# packet to be sent was made, secondly the checksum was appended to the header and
-# then finally the complete packet was sent to the destination.
-# Make the header in a similar way to the ping exercise.
-# Append checksum to the header.
-# Don't send the packet yet , just return the final packet in this function.
-# So the function ending should look like this
-# Make the header in a similar way to the ping exercise.
-####################################################
-
-    #Rewrite comments
+    # Build the packet to specifications
 
 
-    # Header is type (8), code (8), checksum (16), id (16), sequence (16)
-    theChecksum = 0
-    ID = os.getpid() & 0xFFFF
+    #Creates new checksum for packet
+    theChecksum = 0                                                     # Initialize at 0
+    ID = os.getpid() & 0xFFFF                                           # Gets ID of packet
 
-    # Make a dummy header with a 0 checksum.
-    # struct -- Interpret strings as packed binary data
-    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
     
-    payload = struct.pack("d", time.time())
+    
+    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)     # Creates header with checksum of 0
+    
 
-    # Calculate the checksum on the data and the dummy header.
-    # Append checksum to the header.
-    theChecksum = checksum(ICMPHeader + payload)    
-    #if sys.platform == 'sierra':                                                    # don't do this?!?!?!?
-    #    theChecksum = socket.htons(theChecksum) & 0xffff
-        #Convert 16-bit integers from host to network byte order.
-    #else:
-    theChecksum = htons(theChecksum)
+    payload = struct.pack("d", time.time())                             # Make the body of the ICMP the current time
 
-    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
-    packet = ICMPHeader + payload
-    return packet
-#####################################################
+    
+    theChecksum = checksum(ICMPHeader + payload)                        # Creates proper checksum for packet (calculated from header and payload combined)
+
+    theChecksum = htons(theChecksum)                                    # We need to convert the checksum from host to network byte order
+                                                                        # Source: https://docs.python.org/2/library/socket.html#socket.htons
+
+    
+    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)     #Fully constructs the new header with the new checksum
+
+    packet = ICMPHeader + payload                                       # Combine header with body
+
+    return packet                                                       # Return the fully built packet
+
+
 def get_route(hostname):
     timeLeft = TIMEOUT
     for ttl in xrange(1,MAX_HOPS):
         for tries in xrange(TRIES):
             destAddr = gethostbyname(hostname)
             
-            #Fill in start
-            # Make a raw socket named mySocket
-            protocol = socket.getprotobyname("icmp")                                        # the same as when we did this in the other file
-            mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)
-            #Fill in end
 
-            mySocket.setsockopt(IPPROTO_IP, IP_TTL, struct.pack('I',    ttl))
+            
+            protocol = socket.getprotobyname("icmp")                    # Get the protocol for icmp. Thank God for this function!
+
+            mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)     # Make a raw socket named mySocket
+
+            # The rest of the stuff was given... comments may not be accurate here!
+            mySocket.setsockopt(IPPROTO_IP, IP_TTL, struct.pack('I', ttl))          # Do stuff with mySocket
             mySocket.settimeout(TIMEOUT)
 
-            try:
-                d = build_packet()
-                mySocket.sendto(d, (hostname, 0))
-                t = time.time()
-                startedSelect = time.time()
-                whatReady = select.select([mySocket], [], [], timeLeft)
-                howLongInSelect = (time.time() - startedSelect)
-                if whatReady[0] == []: # Timeout
+            try:                                                        # Attempt to...
+                d = build_packet()                                                  # Get the built packet
+                mySocket.sendto(d, (hostname, 0))                                   # Send it to mySocket
+                t = time.time()                                                     # Get the current time (why do we need t?)
+                startedSelect = time.time()                                         # Same here
+                whatReady = select.select([mySocket], [], [], timeLeft)             # Select the stuff in the socket(?)
+                howLongInSelect = (time.time() - startedSelect)                     # Count down the remaining time
+                if whatReady[0] == []: # Timeout                                    # Timeout if nothing was selected (AKA received?)
                     print " * * * Request timed out."
-                recvPacket, addr = mySocket.recvfrom(1024)
-                timeReceived = time.time()
-                timeLeft = timeLeft - howLongInSelect
-                if timeLeft <= 0:
+                recvPacket, addr = mySocket.recvfrom(1024)                          # Populate the received packet and address
+                timeReceived = time.time()                                          # Set time received to the current time
+                timeLeft = timeLeft - howLongInSelect                               # (Re)calculate time left
+                if timeLeft <= 0:                                                   # Timeout when no time's left
                     print " * * * Request timed out."
             except timeout:
-                continue
-            else:
+                continue                                                            # Try again as soon as we timeout, from beginning
+            else:                                                       # When there's no timeout...
+
                 # Fetch the icmp type from the IP packet
                 icmpHeader = recvPacket[20:28]
-                #ICMPType, we, dont, need, these = struct.unpack("bbHHh", icmpHeader)
+                
                 ICMPType, ICMPcode, headerChecksum, packetID, sequence= struct.unpack("bbHHh", icmpHeader) # we don't need anything besides ICMPType ("b")
 
                 #ICMPType = struct.unpack("d", icmpHeader)                                  # why doesn't this work!?
 
+                # Do different things depending on the ICMP type
+                # Types are dictated here to keep comments clean:
+                # 
                 if ICMPType == 11:
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
