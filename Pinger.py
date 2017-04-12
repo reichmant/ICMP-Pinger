@@ -10,21 +10,25 @@ import socket
 #import raw_input
 
 def getDestination():
-    return raw_input("What address should we ping?")
+    return raw_input("What address should we ping? \n")
 
 notDone=True
 while notDone:
     method=raw_input("To ping a server type 'ping' or to traceroute a server type 'trace' \n")
     if method=="trace":
         destination=getDestination()
-        os.system("python Traceroute.py ", destination)
-        notDone=false
+        command= "sudo python Traceroute.py "+ destination
+        os.system(command)
+        notDone=False
     elif method=="ping":
         destination=getDestination()
-        pings=raw_input("How many times should we ping it?")
-        os.system("python Traceroute.py ", destination, " ", pings)
-        notDone=false
+        pings=raw_input("How many times should we ping it? \n")
+        command="sudo python 'ICMP Pinger.py' "+ destination+ " "+ pings
+        os.system(command)
+        notDone=False
     else:
-        print "We do not recognize that"
+        print "We do not recognize that. \n"
 
-    
+os.system("sl")  
+os.system("cowsay I Like Eggs") 
+

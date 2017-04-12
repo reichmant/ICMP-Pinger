@@ -126,7 +126,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 		
 
 		if (packetID==ID):
-			delay=analyzeType(ICMPtype,recPacket,destAddr)
+			delay=analyzeType(ICMPtype, ICMPcode, recPacket,destAddr)
 			return delay
 
 		timeLeft = timeLeft - howLongInSelect
@@ -202,4 +202,5 @@ def ping(host, timeout=1):
 		print "round-trip min/avg/max = ", shortestTime, "/", cumulativeTime/numberOfPackets, "/", longestTime, "ms"
 	return delay
 ping(sys.argv[1])
+
 
