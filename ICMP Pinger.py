@@ -151,9 +151,9 @@ def sendOnePing(mySocket, destAddr, ID):
 	# struct -- Interpret strings as packed binary data
 	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)			# Pack the header
 	data = struct.pack("d", time.time())											# Pack the data
-	# Calculate the checksum on the data and the dummy header.
-	myChecksum = checksum(header + data)
-	myChecksum = socket.htons(myChecksum)
+	
+	myChecksum = checksum(header + data)											# Calculate the checksum on the data and the dummy header.
+	myChecksum = socket.htons(myChecksum)											# Get the right checksum, and put in the header
 
 	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
 	packet = header + data
