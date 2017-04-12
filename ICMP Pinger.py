@@ -6,7 +6,7 @@ import time
 import select
 import binascii
 import socket
-#import antigravity
+#import antigravity																	# https://xkcd.com/353/
 ICMP_ECHO_REQUEST = 8
 
 #global shortestTime, longestTime, cumulativeTime, numberOfPackets
@@ -18,18 +18,20 @@ numberOfPackets = 0
 
 
 def checksum(str):
-	csum = 0
-	countTo = (len(str) / 2) * 2
+	# Calculate the checksum.
+	csum = 0																		# Initialize to 0
+	countTo = (len(str) / 2) * 2													# Calculate upper bound
+	count = 0																		# Initialize counter at 0
 
-	count = 0
-	while count < countTo:
-		thisVal = ord(str[count+1]) * 256 + ord(str[count])
+	while count < countTo:															# While within the bounds of the counter...
+		thisVal = ord(str[count+1]) * 256 + ord(str[count])							#	Calculate the checksum
 		csum = csum + thisVal
 		csum = csum & 0xffffffffL
 		count = count + 2
-	if countTo < len(str):
-		csum = csum + ord(str[len(str) - 1])
-		csum = csum & 0xffffffffL
+
+	if countTo < len(str):															# Also do some fancy checksum stuff if the upper
+		csum = csum + ord(str[len(str) - 1])										# bounds of the counter are less than the length
+		csum = csum & 0xffffffffL													# of the string passed in.
 
 	csum = (csum >> 16) + (csum & 0xffff)
 	csum = csum + (csum >> 16)
@@ -42,6 +44,8 @@ def checksum(str):
 def analyzeType(ICMPtype,ICMPcode,recPacket,destAddr):
 	# Takes a type and code in for the received packet/destination address
 	# Prints out what type of response we got, based on type/code
+	# It looks complicated, but it's just a series of IF statements, based on:
+	# https://rlworkman.net/howtos/iptables/chunkyhtml/x281.html
 	print "ICMP type and code are:", ICMPtype, ", ",ICMPcode
 	timeReceived = time.time()
 	

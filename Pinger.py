@@ -30,5 +30,4 @@ while notDone:
         print "We do not recognize that. \n"
 
 os.system("sl")  
-os.system("cowsay I Like Eggs") 
-
+os.system("cowsay I Like Eggs")
