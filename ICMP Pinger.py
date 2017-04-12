@@ -176,12 +176,11 @@ def ping(host, timeout=1):
 	#timeout=1 means: If one second goes by without a reply from the server,
 	#the client assumes that either the client's ping or the server's pong is lost
 
-	try{
+	try:
 		numberOfPings=int(sys.argv[2])
-	}
-	catch{
+	
+	except:
 		numberOfPings=10
-	}
 	
 	dest = socket.gethostbyname(host)
 	print "Pinging " + dest + " using Python:"
