@@ -178,7 +178,7 @@ def ping(host, timeout=1):
 
 	try:
 		numberOfPings=int(sys.argv[2])
-	
+
 	except:
 		numberOfPings=10
 	
@@ -201,6 +201,5 @@ def ping(host, timeout=1):
 	if numberOfPackets > 0 :
 		print "round-trip min/avg/max = ", shortestTime, "/", cumulativeTime/numberOfPackets, "/", longestTime, "ms"
 	return delay
+	
 ping(sys.argv[1])
-
-

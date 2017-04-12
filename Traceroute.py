@@ -17,57 +17,56 @@ TRIES = 2
 def checksum(str):
 # In this function we make the checksum of our packet
 # hint: see icmpPing lab
+# We just copied this from the other file, since we already did it...
+    csum = 0                                                            # Initialize to 0
+    countTo = (len(str) / 2) * 2                                        # Calculate upper bound
+    count = 0                                                           # Initialize counter at 0
 
-    csum = 0
-    countTo = (len(str) / 2) * 2
-    count = 0
-
-    while count < countTo:
-        thisVal = ord(str[count+1]) * 256 + ord(str[count])
+    while count < countTo:                                              # While within the bounds of the counter...
+        thisVal = ord(str[count+1]) * 256 + ord(str[count])             #   Calculate the checksum
         csum = csum + thisVal
         csum = csum & 0xffffffffL
         count = count + 2
 
-    if countTo < len(str):
-        csum = csum + ord(str[len(str) - 1])
-        csum = csum & 0xffffffffL
+    if countTo < len(str):                                              # Also do some fancy checksum stuff if the upper
+        csum = csum + ord(str[len(str) - 1])                            # bounds of the counter are less than the length
+        csum = csum & 0xffffffffL                                       # of the string passed in.
 
     csum = (csum >> 16) + (csum & 0xffff)
     csum = csum + (csum >> 16)
     answer = ~csum
     answer = answer & 0xffff
     answer = answer >> 8 | (answer << 8 & 0xff00)
-    return answer
-
+    return answer                                                       
 
 
 def build_packet():
+    # Build the packet to specifications
+
 
     #Creates new checksum for packet
-    theChecksum = 0
-    #Gets ID of packet
-    ID = os.getpid() & 0xFFFF
+    theChecksum = 0                                                     # Initialize at 0
+    ID = os.getpid() & 0xFFFF                                           # Gets ID of packet
 
     
-    #creates header with checksum of 0
-    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
+    
+    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)     # Creates header with checksum of 0
     
 
-    #make the body of the ICMP the current time
-    payload = struct.pack("d", time.time())
+    payload = struct.pack("d", time.time())                             # Make the body of the ICMP the current time
 
-    # Creates proper checksum for packet
-    theChecksum = checksum(ICMPHeader + payload)    
+    
+    theChecksum = checksum(ICMPHeader + payload)                        # Creates proper checksum for packet (calculated from header and payload combined)
 
-    theChecksum = htons(theChecksum)
+    theChecksum = htons(theChecksum)                                    # We need to convert the checksum from host to network byte order
+                                                                        # Source: https://docs.python.org/2/library/socket.html#socket.htons
 
-    #Fully constructs the new header with the new checksum
-    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)
+    
+    ICMPHeader = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, theChecksum, ID, 1)     #Fully constructs the new header with the new checksum
 
-    #Combine header with body
-    packet = ICMPHeader + payload
+    packet = ICMPHeader + payload                                       # Combine header with body
 
-    return packet
+    return packet                                                       # Return the fully built packet
 
 
 def get_route(hostname):
@@ -76,35 +75,33 @@ def get_route(hostname):
         for tries in xrange(TRIES):
             destAddr = gethostbyname(hostname)
             
-            #Fill in start
 
-            # Make a raw socket named mySocket
-            protocol = socket.getprotobyname("icmp")     # the same as when we did this in the other file
+            
+            protocol = socket.getprotobyname("icmp")                    # Get the protocol for icmp. Thank God for this function!
 
-            mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)
+            mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)     # Make a raw socket named mySocket
 
-            #Fill in end
-
-            mySocket.setsockopt(IPPROTO_IP, IP_TTL, struct.pack('I',    ttl))
+            # The rest of the stuff was given... comments may not be accurate here!
+            mySocket.setsockopt(IPPROTO_IP, IP_TTL, struct.pack('I', ttl))          # Do stuff with mySocket
             mySocket.settimeout(TIMEOUT)
 
-            try:
-                d = build_packet()
-                mySocket.sendto(d, (hostname, 0))
-                t = time.time()
-                startedSelect = time.time()
-                whatReady = select.select([mySocket], [], [], timeLeft)
-                howLongInSelect = (time.time() - startedSelect)
-                if whatReady[0] == []: # Timeout
+            try:                                                        # Attempt to...
+                d = build_packet()                                                  # Get the built packet
+                mySocket.sendto(d, (hostname, 0))                                   # Send it to mySocket
+                t = time.time()                                                     # Get the current time (why do we need t?)
+                startedSelect = time.time()                                         # Same here
+                whatReady = select.select([mySocket], [], [], timeLeft)             # Select the stuff in the socket(?)
+                howLongInSelect = (time.time() - startedSelect)                     # Count down the remaining time
+                if whatReady[0] == []: # Timeout                                    # Timeout if nothing was selected (AKA received?)
                     print " * * * Request timed out."
-                recvPacket, addr = mySocket.recvfrom(1024)
-                timeReceived = time.time()
-                timeLeft = timeLeft - howLongInSelect
-                if timeLeft <= 0:
+                recvPacket, addr = mySocket.recvfrom(1024)                          # Populate the received packet and address
+                timeReceived = time.time()                                          # Set time received to the current time
+                timeLeft = timeLeft - howLongInSelect                               # (Re)calculate time left
+                if timeLeft <= 0:                                                   # Timeout when no time's left
                     print " * * * Request timed out."
             except timeout:
-                continue
-            else:
+                continue                                                            # Try again as soon as we timeout, from beginning
+            else:                                                       # When there's no timeout...
 
                 # Fetch the icmp type from the IP packet
                 icmpHeader = recvPacket[20:28]
@@ -113,6 +110,9 @@ def get_route(hostname):
 
                 #ICMPType = struct.unpack("d", icmpHeader)                                  # why doesn't this work!?
 
+                # Do different things depending on the ICMP type
+                # Types are dictated here to keep comments clean:
+                # https://rlworkman.net/howtos/iptables/chunkyhtml/x281.html
                 if ICMPType == 11:
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
@@ -131,4 +131,5 @@ def get_route(hostname):
                 break
             finally:
                 mySocket.close()
-get_route(sys.argv[1])
+get_route(sys.argv[1])                                                  # Basically, this file just calls get_route
+                                                                        # The user is supposed to give us a url/IP
