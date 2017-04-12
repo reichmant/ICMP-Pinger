@@ -112,7 +112,7 @@ def get_route(hostname):
 
                 # Do different things depending on the ICMP type
                 # Types are dictated here to keep comments clean:
-                # 
+                # https://rlworkman.net/howtos/iptables/chunkyhtml/x281.html
                 if ICMPType == 11:
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
@@ -131,4 +131,5 @@ def get_route(hostname):
                 break
             finally:
                 mySocket.close()
-get_route("google.com")
+get_route(sys.argv[1])                                                  # Basically, this file just calls get_route
+                                                                        # The user is supposed to give us a url/IP

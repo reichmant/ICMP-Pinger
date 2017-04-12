@@ -132,6 +132,8 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 		timeLeft = timeLeft - howLongInSelect
 		if timeLeft <= 0:
 			return "Request timed out."
+
+			
 def sendOnePing(mySocket, destAddr, ID):
 	# Header is type (8), code (8), checksum (16), id (16), sequence (16)
 
@@ -174,11 +176,12 @@ def ping(host, timeout=1):
 	#timeout=1 means: If one second goes by without a reply from the server,
 	#the client assumes that either the client's ping or the server's pong is lost
 
+	try:
+		numberOfPings=int(sys.argv[2])
+
+	except:
+		numberOfPings=10
 	
-	if sys.argv[2] > 0:
-		numberOfPings = int(sys.argv[2])
-	else:
-		numberOfPings = 10
 	dest = socket.gethostbyname(host)
 	print "Pinging " + dest + " using Python:"
 	print ""
@@ -199,4 +202,3 @@ def ping(host, timeout=1):
 		print "round-trip min/avg/max = ", shortestTime, "/", cumulativeTime/numberOfPackets, "/", longestTime, "ms"
 	return delay
 ping(sys.argv[1])
-
