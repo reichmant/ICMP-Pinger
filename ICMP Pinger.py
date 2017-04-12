@@ -129,10 +129,9 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
 											# (I heard we can go further and get TTL, but we accomplished that differently)
 		ICMPtype, ICMPcode, headerChecksum, packetID, sequence= struct.unpack("bbHHh", icmpHeader)	# To get TTL, we could use "bbHHhd".
 																									# But we don't need that? I heard other groups needed that...
-		
 
 		if (packetID==ID):															# If the packet ID matches the one passed in...
-			delay=analyzeType(ICMPtype,recPacket,destAddr)								# Set the delay to the return of the analyzed
+			delay=analyzeType(ICMPtype, ICMPcode, recPacket, destAddr)				# Get the delay by analyzing the type/code
 			return delay
 
 		timeLeft = timeLeft - howLongInSelect
@@ -204,4 +203,5 @@ def ping(host, timeout=1):
 	if numberOfPackets > 0 :
 		print "round-trip min/avg/max = ", shortestTime, "/", cumulativeTime/numberOfPackets, "/", longestTime, "ms"
 	return delay
+
 ping(sys.argv[1])													# Ping the destination address specified by the user
