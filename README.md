@@ -1,5 +1,6 @@
-# NetworkingProject2
+# Simple ICMP Pinger in Python
 ### Thomas Reichman, Patrick Gemperline, Aaron Pitman
+UPDATE: This was originally an assignment from April 2017. Forked to my main account in May 2018.
 ## Prerequisites
 
 None. Having 'sl' and 'cowsay' installed is highly reccommended. Patrick insists it's required.
